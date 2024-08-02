@@ -1,6 +1,7 @@
 # XrmToolBox.ChildFlowTriggerUpdater
 
 This tool will update the child flow triggers to include the parent URL and will update all parent flows to include their flow run URLs.
+![Screens](https://github.com/user-attachments/assets/54b79874-f7b5-48f9-9903-7a311d9c60fa)
 
 # Background
 
