@@ -10,6 +10,8 @@ When you have a child flow that is called by more than one parent flow, it is di
 
 - This tool will help you load all child flows with their respective parents from your solution.
 - Provide the ability to add the trigger to the child flow and pass the parent flow run URLs **in bulk!**
+- Support updating child flow that is also a parent of other flows
+- Support updating parent flow that calls same child flows multiple times (e.g. different branching logic)
 - Allow you to review the JSON content of the flow.
 
 # Steps
