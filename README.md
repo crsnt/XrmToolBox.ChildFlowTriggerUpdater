@@ -5,7 +5,9 @@ This tool will update the child flow triggers to include the parent URL and will
 
 # Background
 
-When you have a child flow that is called by more than one parent flow, it is difficult to troubleshoot when things go wrong. The most common way to address this is to pass the parent flow run URL to the child flow as one of the trigger inputs. Developers need to always remember to add this. In big projects, this best practice can be easily missed, and it can be time-consuming to address this one by one.
+When you have a child flow that is called by more than one parent flow, it is difficult to troubleshoot when things go wrong. The most common way to address this is to pass the parent flow run URL to the child flow as one of the trigger inputs. 
+
+Developers need to always remember to add this. In big projects, this best practice can be easily missed, and it can be time-consuming to address this one by one.
 
 # Purpose
 
