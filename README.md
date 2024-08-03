@@ -21,8 +21,11 @@ Developers need to always remember to add this. In big projects, this best pract
 
 1. Select your solution.
 2. Confirm the **Setting -> Child Trigger Input Name** in the Settings dialog (right side of the screen) for the trigger input name.
-3. Check the child/parent flows that you want to update.
-4. Click 'Update Selected Flows'.
+   <br/>Note: If you have existing trigger input with different name, it will add new one. Existing trigger input with the same name will be skipped.
+4. Check the child/parent flows that you want to update.
+   <br/>Note: Flows that don't require updates will be in gray colour and skipped. If there is a parent flow that needs update, make sure that the child is ticked regardless.
+5. Click 'Update Selected Flows'.
+   <br/>Note: Each child flow and their direct parents updates are executed inside a transaction to ensure consistency.
 
 # Credits
 
