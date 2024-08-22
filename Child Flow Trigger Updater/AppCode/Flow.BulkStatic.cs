@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -249,13 +250,8 @@ namespace ChildFlowTriggerUpdater.AppCode
 
         private static IEnumerable<Flow> GetChildFlowsOnly(IEnumerable<Flow> flows, Settings settings)
         {
-            return flows.Where(flow =>
-            {
-                JObject jobject = JObject.Parse(flow.Content);
-                JToken manualTrigger = jobject.SelectToken("properties.definition.triggers.manual");
-
-                return manualTrigger != null;
-            })
+            return flows
+            .Where(flow => IsValidJson(flow.Content) && HasManualTrigger(flow.Content))
             .Select(flow =>
             {
                 JObject jobject = JObject.Parse(flow.Content);
@@ -273,12 +269,43 @@ namespace ChildFlowTriggerUpdater.AppCode
             });
         }
 
+        private static bool IsValidJson(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return false;
+            }
+
+            content = content.Trim();
+            if ((content.StartsWith("{") && content.EndsWith("}")) || // For object
+                (content.StartsWith("[") && content.EndsWith("]")))   // For array
+            {
+                try
+                {
+                    JToken.Parse(content);
+                    return true;
+                }
+                catch (JsonReaderException)
+                {
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        private static bool HasManualTrigger(string content)
+        {
+            JObject jobject = JObject.Parse(content);
+            JToken manualTrigger = jobject.SelectToken("properties.definition.triggers.manual");
+            return manualTrigger != null;
+        }
+
         private static void FindNodesWithWorkflowId(Flow childFlow, Flow workflow, Settings settings)
         {
             string parentFlowUrlValue = "@concat('https://make.powerautomate.com/environments/',workflow()['tags']['environmentName'],'/flows/shared/',workflow()['tags']['logicAppName'],'/runs/',workflow()?['run']['name'])";
             string clientData = workflow.Content;
 
-            if (!string.IsNullOrEmpty(clientData))
+            if (!string.IsNullOrEmpty(clientData) && IsValidJson(clientData))
             {
                 JObject jsonObject = JObject.Parse(clientData);
 
