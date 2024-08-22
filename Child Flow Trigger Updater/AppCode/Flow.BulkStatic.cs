@@ -251,7 +251,7 @@ namespace ChildFlowTriggerUpdater.AppCode
         private static IEnumerable<Flow> GetChildFlowsOnly(IEnumerable<Flow> flows, Settings settings)
         {
             return flows
-            .Where(flow => IsValidJson(flow.Content) && HasManualTrigger(flow.Content))
+            .Where(flow => HasManualTrigger(flow.Content))
             .Select(flow =>
             {
                 JObject jobject = JObject.Parse(flow.Content);
@@ -295,9 +295,14 @@ namespace ChildFlowTriggerUpdater.AppCode
 
         private static bool HasManualTrigger(string content)
         {
-            JObject jobject = JObject.Parse(content);
-            JToken manualTrigger = jobject.SelectToken("properties.definition.triggers.manual");
-            return manualTrigger != null;
+            if (IsValidJson(content))
+            {
+                JObject jobject = JObject.Parse(content);
+                JToken manualTrigger = jobject.SelectToken("properties.definition.triggers.manual");
+                return manualTrigger != null;
+            }
+
+            return false;
         }
 
         private static void FindNodesWithWorkflowId(Flow childFlow, Flow workflow, Settings settings)
