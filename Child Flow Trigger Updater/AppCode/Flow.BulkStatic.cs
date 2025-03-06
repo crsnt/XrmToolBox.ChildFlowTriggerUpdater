@@ -1,4 +1,4 @@
-﻿using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using Newtonsoft.Json;
@@ -187,31 +187,53 @@ namespace ChildFlowTriggerUpdater.AppCode
 
                 JObject jsonObj = JObject.Parse(flowContent);
 
-                var actions = jsonObj["properties"]["definition"]["actions"];
-                foreach (var action in actions)
+                // Navigate to the "actions" node within "rootNode"
+                var actionsNode = jsonObj["properties"]?["definition"]?["actions"];
+                if (actionsNode != null)
                 {
-                    var inputs = action.First["inputs"];
-                    if (inputs["host"] != null &&
-                        inputs["host"]["workflowReferenceName"] != null &&
-                        inputs["host"]["workflowReferenceName"]?.ToString() == childWorkflowId)
-                    {
-                        var body = inputs["body"] as JObject;
-                        bool containsChildTriggerInputName = false;
+                    // Find all actions recursively
+                    var allActions = FindAllActions(actionsNode).ToList();
 
-                        foreach (var property in body.Properties())
+                    var filteredActions = new List<JToken>();
+
+                    // Iterate through actions and filter based on conditions
+                    foreach (var action in allActions)
+                    {
+                        var firstAction = action.First;
+
+                        // Check if "inputs" is a JObject
+                        if (firstAction["inputs"] is JObject inputs)
                         {
-                            if (property.Name == childTriggerInputName)
+                            // Check if "host" is a JObject
+                            if (inputs["host"] is JObject host)
                             {
-                                if (property.Value.ToString() == parentFlowUrlValue)
+                                // Check if "workflowReferenceName" is a JValue and not null
+                                if (host["workflowReferenceName"] is JValue workflowReferenceName && workflowReferenceName != null)
                                 {
-                                    containsChildTriggerInputName = true;
+                                    // Set a breakpoint here to inspect the value
+                                    if (workflowReferenceName.ToString() == childWorkflowId)
+                                    {
+                                        var body = inputs["body"] as JObject;
+                                        bool containsChildTriggerInputName = false;
+
+                                        foreach (var property in body.Properties())
+                                        {
+                                            if (property.Name == childTriggerInputName)
+                                            {
+                                                if (property.Value.ToString() == parentFlowUrlValue)
+                                                {
+                                                    containsChildTriggerInputName = true;
+                                                }
+                                            }
+                                        }
+
+                                        if (!containsChildTriggerInputName)
+                                        {
+                                            body[$"{childTriggerInputName}"] = parentFlowUrlValue;
+                                        }
+                                    }
                                 }
                             }
-                        }
-
-                        if (!containsChildTriggerInputName)
-                        {
-                            body[$"{childTriggerInputName}"] = parentFlowUrlValue;
                         }
                     }
                 }
@@ -318,14 +340,18 @@ namespace ChildFlowTriggerUpdater.AppCode
                 var actionsNode = jsonObject["properties"]?["definition"]?["actions"];
                 if (actionsNode != null)
                 {
-                    var actions = actionsNode.Children().Select(action => action.First).ToList();
+                    // Find all actions recursively
+                    var allActions = FindAllActions(actionsNode).ToList();
 
-                    // Check if all actions satisfy the conditions
-                    var filteredActions = actions
-                    .Where(action =>
+                    var filteredActions = new List<JToken>();
+
+                    // Iterate through actions and filter based on conditions
+                    foreach (var action in allActions)
                     {
+                        var firstAction = action.First;
+
                         // Check if "inputs" is a JObject
-                        if (action["inputs"] is JObject inputs)
+                        if (firstAction["inputs"] is JObject inputs)
                         {
                             // Check if "host" is a JObject
                             if (inputs["host"] is JObject host)
@@ -333,13 +359,15 @@ namespace ChildFlowTriggerUpdater.AppCode
                                 // Check if "workflowReferenceName" is a JValue and not null
                                 if (host["workflowReferenceName"] is JValue workflowReferenceName && workflowReferenceName != null)
                                 {
-                                    return workflowReferenceName.ToString() == childFlow.Id.ToString();
+                                    // Set a breakpoint here to inspect the value
+                                    if (workflowReferenceName.ToString() == childFlow.Id.ToString()) // Replace with childFlow.Id.ToString() if needed
+                                    {
+                                        filteredActions.Add(action.First);
+                                    }
                                 }
                             }
                         }
-                        return false;
-                    })
-                    .ToList();
+                    }
 
                     if (filteredActions.Any())
                     {
@@ -373,6 +401,45 @@ namespace ChildFlowTriggerUpdater.AppCode
                     }
                 }
             }
+        }
+
+        // Function to recursively find all actions
+        private static List<JToken> FindAllActions(JToken node)
+        {
+            var actions = new List<JToken>();
+            var stack = new Stack<JToken>();
+            stack.Push(node);
+
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+
+                // If the current node is a JObject, check for "actions"
+                if (current is JObject obj)
+                {
+                    // If "actions" exists, add them to the list
+                    if (obj.ContainsKey("actions"))
+                    {
+                        actions.AddRange(obj["actions"].Children());
+                    }
+
+                    // Push all properties onto the stack for further exploration
+                    foreach (var property in obj.Properties())
+                    {
+                        stack.Push(property.Value); // Access the Value of the JProperty
+                    }
+                }
+                // If the current node is a JArray, iterate through its items
+                else if (current is JArray array)
+                {
+                    foreach (var item in array)
+                    {
+                        stack.Push(item);
+                    }
+                }
+            }
+
+            return actions;
         }
     }
 }
